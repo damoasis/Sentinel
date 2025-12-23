@@ -31,11 +31,11 @@ java -Dserver.port=8080 \
 为便于演示，我们对控制台本身加入了流量控制功能，具体做法是引入 Sentinel 提供的 `CommonFilter` 这个 Servlet Filter。
 上述 JVM 参数的含义是：
 
-| 参数 | 作用 |
-|--------|--------|
-|`-Dcsp.sentinel.dashboard.server=localhost:8080`|向 Sentinel 接入端指定控制台的地址|
-|`-Dproject.name=sentinel-dashboard`|向 Sentinel 指定应用名称，比如上面对应的应用名称就为 `sentinel-dashboard`|
-|`-Dcsp.sentinel.api.port=8719`|可选项，客户端提供给Dashboard访问或者查看Sentinel的运行访问的参数，默认8719|
+| 参数                                                | 作用                                                   |
+|---------------------------------------------------|------------------------------------------------------|
+| `-Dcsp.sentinel.dashboard.server=localhost:8080`  | 向 Sentinel 接入端指定控制台的地址                               |
+| `-Dproject.name=sentinel-dashboard`               | 向 Sentinel 指定应用名称，比如上面对应的应用名称就为 `sentinel-dashboard` |
+| `-Dcsp.sentinel.api.port=8719`                    | 可选项，客户端提供给Dashboard访问或者查看Sentinel的运行访问的参数，默认8719     |
 
 全部的配置项可以参考 [启动配置项文档](https://github.com/alibaba/Sentinel/wiki/%E5%90%AF%E5%8A%A8%E9%85%8D%E7%BD%AE%E9%A1%B9)。
 
@@ -62,7 +62,7 @@ java -Dserver.port=8080 \
 ## 6. 构建Docker镜像
 
 ```bash
-docker build --build-arg SENTINEL_VERSION=1.8.8 -t ${REGISTRY}/sentinel-dashboard:v1.8.8 .
+docker build --build-arg SENTINEL_VERSION=1.8.9 -t ${REGISTRY}/sentinel-dashboard:v1.8.9 .
 ```
 
 *注意：Sentinel 控制台目前仅支持单机部署。Sentinel 控制台项目提供 Sentinel 功能全集示例，不作为开箱即用的生产环境控制台，不提供安全可靠保障。若希望在生产环境使用请根据[文档](https://github.com/alibaba/Sentinel/wiki/%E5%9C%A8%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E4%B8%AD%E4%BD%BF%E7%94%A8-Sentinel)自行进行定制和改造。*

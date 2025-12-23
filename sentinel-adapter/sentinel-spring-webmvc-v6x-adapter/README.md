@@ -86,14 +86,14 @@ config.setBlockExceptionHandler((request, response, e) -> {
 - Common configuration in `SentinelWebMvcConfig` and `SentinelWebMvcTotalConfig`:
 
 | name | description | type | default value |
-|------|------------|------|-------|
-| `blockExceptionHandler`| The handler that handles the block request | `BlockExceptionHandler` | null (throw out the BlockException) |
+| ------ | ------------ | ------ | ------- |
+| `blockExceptionHandler` | The handler that handles the block request | `BlockExceptionHandler` | null (throw out the BlockException) |
 | `originParser` | Extracting request origin (e.g. IP or appName from HTTP Header) from HTTP request | `RequestOriginParser` | - |
 
 - `SentinelWebMvcConfig` configuration:
 
 | name | description | type | default value |
-|------|------------|------|-------|
+| ------ | ------------ | ------ | ------- |
 | urlCleaner | The `UrlCleaner` interface is designed for clean and unify the URL resource. | `UrlCleaner` | - |
 | requestAttributeName | Attribute key in request used by Sentinel (internal) | `String` | `$$sentinel_spring_web_entry_attr` |
 | httpMethodSpecify | Specify whether the URL resource name should contain the HTTP method prefix (e.g. `POST:`). | `boolean` | `false` |
@@ -102,6 +102,6 @@ config.setBlockExceptionHandler((request, response, e) -> {
 - `SentinelWebMvcTotalConfig` configuration:
 
 | name | description | type | default value |
-|------|------------|------|-------|
+| ------ | ------------ | ------ | ------- |
 | totalResourceName | The resource name in `SentinelTotalInterceptor` | `String` | `spring-mvc-total-url-request` |
 | requestAttributeName | Attribute key in request used by Sentinel (internal) | `String` | `$$sentinel_spring_web_total_entry_attr` |
