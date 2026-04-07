@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
  * @author Eric Zhao
  */
 @Component
-@ConditionalOnProperty(name = "sentinel.metrics.type", havingValue = "inmemory")
+@ConditionalOnProperty(name = "sentinel.metrics.type", havingValue = "inmemory", matchIfMissing = true)
 public class InMemoryMetricsRepository implements MetricsRepository<MetricEntity> {
 
     private static final long MAX_METRIC_LIVE_TIME_MS = 1000 * 60 * 5;

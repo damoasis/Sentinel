@@ -284,9 +284,9 @@ public class ParamFlowRuleController {
     }
 
     private CompletableFuture<Void> publishRules(String app) throws Exception {
+        List<ParamFlowRuleEntity> rules = repository.findAllByApp(app);
         return CompletableFuture.runAsync(() -> {
             try {
-                List<ParamFlowRuleEntity> rules = repository.findAllByApp(app);
                 rulePublisher.publish(app, rules);
             } catch (Exception e) {
                 throw new RuntimeException(e);

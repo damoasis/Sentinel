@@ -20,6 +20,8 @@ import com.alibaba.csp.sentinel.dashboard.datasource.entity.gateway.GatewayFlowR
 import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.*;
 import com.alibaba.csp.sentinel.datasource.Converter;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.config.ConfigFactory;
 import com.alibaba.nacos.api.config.ConfigService;
@@ -53,7 +55,17 @@ public class NacosConfig {
 
     @Bean
     public Converter<List<GatewayFlowRuleEntity>, String> gatewayFlowRuleEntityEncoder() {
-        return JSON::toJSONString;
+        return list -> {
+            JSONArray result = new JSONArray();
+            if (list != null) {
+                for (GatewayFlowRuleEntity entity : list) {
+                    JSONObject json = (JSONObject) JSON.toJSON(entity);
+                    json.put("intervalSec", GatewayFlowRuleEntity.calIntervalSec(entity.getInterval(), entity.getIntervalUnit()));
+                    result.add(json);
+                }
+            }
+            return result.toJSONString();
+        };
     }
 
     @Bean
@@ -73,12 +85,82 @@ public class NacosConfig {
 
     @Bean
     public Converter<List<ParamFlowRuleEntity>, String> paramFlowRuleEntityEncoder() {
-        return JSON::toJSONString;
+        // 将外层 Entity 元数据作为 rule 的 _metadata 扩展字段
+        // 客户端解析时会自动忽略 _metadata，不影响规则生效
+        // Dashboard 读取时可以从 _metadata 还原完整的 Entity 信息
+        return list -> {
+            JSONArray result = new com.alibaba.fastjson.JSONArray();
+
+            for (ParamFlowRuleEntity entity : list) {
+                // 1. 将 rule 转为 JSONObject
+                JSONObject ruleJson = (com.alibaba.fastjson.JSONObject)
+                        JSON.toJSON(entity.toRule());
+
+                // 2. 将整个 entity 转为 JSON，提取非 rule 字段作为 metadata
+                JSONObject entityJson = (com.alibaba.fastjson.JSONObject)
+                        JSON.toJSON(entity);
+
+                // 3. 移除 rule 字段，剩余的就是元数据
+                entityJson.remove("rule");
+
+                // 4. 将元数据添加到 rule 中
+                if (!entityJson.isEmpty()) {
+                    ruleJson.put("_metadata", entityJson);
+                }
+
+                result.add(ruleJson);
+            }
+
+            return result.toJSONString();
+        };
     }
 
     @Bean
     public Converter<String, List<ParamFlowRuleEntity>> paramFlowRuleEntityDecoder() {
-        return s -> JSON.parseArray(s, ParamFlowRuleEntity.class);
+        // 解析时兼容多种格式：
+        // 1. 扩展格式：[{rule字段 + "_metadata":{...}}] - 优先使用，还原完整 Entity
+        // 2. Dashboard 旧格式：[{"app":"xxx", "rule":{...}}] - ParamFlowRuleEntity
+        // 3. 纯规则格式：[{"resource":"xxx", "count":10, ...}] - ParamFlowRule
+        return s -> {
+            if (s == null || s.trim().isEmpty()) {
+                return null;
+            }
+
+            try {
+                JSONArray array = JSON.parseArray(s);
+                List<ParamFlowRuleEntity> entities = new java.util.ArrayList<>();
+
+                for (int i = 0; i < array.size(); i++) {
+                    JSONObject obj = array.getJSONObject(i);
+
+                    // 尝试提取 _metadata
+                    JSONObject metadata = obj.getJSONObject("_metadata");
+
+                    if (metadata != null) {
+                        // 有 metadata，从扩展格式还原
+                        obj.remove("_metadata");
+                        metadata.put("rule", obj);
+
+                        ParamFlowRuleEntity entity = metadata.toJavaObject(ParamFlowRuleEntity.class);
+
+                        entities.add(entity);
+                    } else if (obj.containsKey("rule")) {
+                        // Dashboard 旧格式：有 rule 字段
+                        entities.add(obj.toJavaObject(ParamFlowRuleEntity.class));
+                    } else {
+                        // 纯规则格式
+                        com.alibaba.csp.sentinel.slots.block.flow.param.ParamFlowRule rule =
+                                obj.toJavaObject(com.alibaba.csp.sentinel.slots.block.flow.param.ParamFlowRule.class);
+                        entities.add(new ParamFlowRuleEntity(rule));
+                    }
+                }
+
+                return entities;
+            } catch (Exception e) {
+                // 降级：尝试直接解析为 ParamFlowRule 数组
+                throw new RuntimeException(e);
+            }
+        };
     }
 
     @Bean
@@ -116,8 +198,8 @@ public class NacosConfig {
         Properties properties = new Properties();
         properties.put(PropertyKeyConst.SERVER_ADDR, nacosPropertiesConfiguration.getServerAddr());
         properties.put(PropertyKeyConst.NAMESPACE, nacosPropertiesConfiguration.getNamespace());
-        properties.put(PropertyKeyConst.USERNAME,nacosPropertiesConfiguration.getUsername());
-        properties.put(PropertyKeyConst.PASSWORD,nacosPropertiesConfiguration.getPassword());
+        properties.put(PropertyKeyConst.USERNAME, nacosPropertiesConfiguration.getUsername());
+        properties.put(PropertyKeyConst.PASSWORD, nacosPropertiesConfiguration.getPassword());
         return ConfigFactory.createConfigService(properties);
 //        return ConfigFactory.createConfigService("localhost");
     }
